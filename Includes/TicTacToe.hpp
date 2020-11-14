@@ -1,5 +1,6 @@
 #pragma once
 #include <stddef.h>
+#include <sys/types.h>
 namespace dl {
 template <class T>
 inline T abs(T arg) {
@@ -8,10 +9,10 @@ inline T abs(T arg) {
 
 template <class T>
 struct Matrix {
-	Matrix(): container(0), y(0){}
+	Matrix(): container(0), m_y(0){}
 	Matrix(size_t x, size_t y):container(new T[x * y]), m_x(x), m_y(y) {}
 	T* operator [] (size_t val) {
-		return &(container[val * y * sizeof(T)]);
+		return &(container[val * m_y * sizeof(T)]);
 	}
 	~Matrix() {
 		delete[] container;
@@ -48,21 +49,23 @@ struct Matrix {
 };
 template <class T>
 struct MatrixRef{
-	Matrix(): container(0), x(0) {}
-	Matrix(T* location, size_t y):container(location), x(x) {}
+	MatrixRef(): container(0), m_x(0) {}
+	MatrixRef(T* location, size_t x):container(location), m_x(x) {}
 	T* operator [] (size_t val) {
-		return &(container[val * x * sizeof(T)]);
+		return &(container[val * m_x * sizeof(T)]);
 	}
-	void set (T* container, size_t x) {
+	void set (T* location, size_t m_x) {
 		container = location;
-		this->x = x;
+		m_x = m_x;
 	}
 	private:
 	T *container;
-	size_t x;
+	size_t m_x;
 };
 //\brief Location in a 2D world.
 struct Vector2 {
+	Vector2() = default;
+	Vector2(ssize_t x, ssize_t y): x(x), y(y) {}
 	ssize_t x;
 	ssize_t y;
 };
@@ -75,18 +78,18 @@ struct Vector2 {
 class TicTacToe {
 	public:
 	TicTacToe(size_t x, size_t y, size_t win, char e = 32, char current = '#')
-		:m_empty(e),
+		:m_emptyChar(e),
 		m_currentChar(current),
-		m_turn('y'),
+		m_turn('x'),
 		m_win(win),
 		m_x(x), m_halfX(x / 2),
 		m_y(y), m_halfY(y / 2),
 		m_grid(x,y),
-		m_center(&m_grid[x/2][y/2]),
-		m_current(x/2,y/2) {set(current);}
+		m_center(&m_grid[x/2][y/2], x),
+		m_cur(x/2,y/2) {set(current);}
 
 	TicTacToe()
-		:m_empty(32),
+		:m_emptyChar(32),
 		m_currentChar('#'),
 		m_turn('x'),
 		m_win(0),
@@ -94,7 +97,7 @@ class TicTacToe {
 		m_y(0),	m_halfY(0),
 		m_grid(),
 		m_center(),
-		m_current(0,0) {}
+		m_cur(0,0) {}
 
 	//\brief Places X or Y in the current position.
 	/// Places X or Y in the current position only if it is possible and switches turn if needed.
@@ -125,12 +128,12 @@ class TicTacToe {
 
 	void resize(size_t x, size_t y) {
 		m_grid.resize(x,y);
-		m_center.set(&m_grid[x/2][y/2]);
+		m_center.set(&m_grid[x/2][y/2], x);
 	}
 
 	/// Checks if current location is valid for setting an X or a Y.
 	bool checkValid() {
-		if (m_center[m_cur.x][m_cur.y] == CURRENT)
+		if (m_center[m_cur.x][m_cur.y] == m_currentChar)
 			return true;
 		return false;
 	}
@@ -139,7 +142,7 @@ class TicTacToe {
 	bool checkWin() {
 		char ch = getCurrentChar();
 		//vertical check:
-		size_t winCouner = 0;
+		size_t winCounter = 0;
 		Vector2 pos = m_cur;
 		while (m_center[wrapX(pos.x)][wrapY(pos.y)] == ch) {
 			++winCounter;
@@ -216,7 +219,7 @@ class TicTacToe {
 	void clear() {
 		size_t size = m_x * m_y;
 		for (size_t i = 0; i < size; ++i)
-			m_grid[0][i] = m_empty;
+			m_grid[0][i] = m_emptyChar;
 	}
 
 	void switchTurn() {
@@ -224,20 +227,23 @@ class TicTacToe {
 	}
 
 	char getCurrentChar() {
-		switch (m_center[m_cur.x][m_cur.y]) {
+		char ch = m_center[m_cur.x][m_cur.y];
+		switch (ch) {
 			case 'x':
 			return 'X';
 			case 'y': 
 			return 'Y';
-			case currentChar:
-			return m_empty;
+			default:
+			if (ch == m_currentChar)
+				return m_emptyChar;
 		}
+		return ch;
 	}
-	printNear(size_t x, size_t y, (void)(*print)(char), char lineBreak = '\n') {
+	void printNear(size_t x, size_t y, void (*print)(char), char lineBreak = '\n') {
 		if (x == 0 || y == 0)
 			return;
-		ssize_t itX = m_current.x - x / 2;
-		ssize_t itY = m_current.y - y / 2;
+		ssize_t itX = m_cur.x - x / 2;
+		ssize_t itY = m_cur.y - y / 2;
 		for (size_t i = 0; i < x; ++i, ++itX) {
 			for (size_t j = 0; j < y; ++j, ++itY)
 				print(m_center[wrapX(itX)][wrapY(itY)]);
@@ -262,39 +268,43 @@ class TicTacToe {
 	ssize_t wrapX(ssize_t x) {
 		x %= m_x;
 		if (x > m_halfX)
-			x -= m_x
+			x -= m_x;
 		return x;
 	}
 	ssize_t wrapY(ssize_t y) {
 		y %= m_y;
 		if (y > m_halfY)
-			y -= m_y
+			y -= m_y;
 		return y;
 	}
 	protected:
 	void unmarkCurrent() {
-		switch (m_center[m_cur.x][m_cur.y]) {
+		char ch = m_center[m_cur.x][m_cur.y];
+		switch (ch) {
 			case 'x':
 			set('X');
 			break;
 			case 'y': 
 			set('Y');
 			break;
-			case currentChar:
-			set(m_empty);
+			default:
+			if (ch == m_currentChar)
+				set(m_emptyChar);
 		}
 	}
 
 	void markCurrent() {
-		switch (m_center[m_cur.x][m_cur.y]) {
+		char ch = m_center[m_cur.x][m_cur.y];
+		switch (ch) {
 			case 'X':
 			set('y');
 			break;
 			case 'Y': 
 			set('y');
 			break;
-			case m_empty:
-			set(currentChar);
+			default:
+			if (ch == m_currentChar)
+				set(m_currentChar);
 		}
 	}
 	
