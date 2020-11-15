@@ -53,7 +53,7 @@ INCLUDES	= $(addprefix -I,$(sort $(dir $(shell find $(SRCS_DIR) -type f -name *$
 
 TARGET		= $(TARGET_DIR)/$(TARGET_NAME)
 
-DEBUG_TARGET	= $(DEBUG_TARGET_NAME)/$(DEBUG_DIR)
+DEBUG_TARGET	= $(DEBUG_DIR)/$(DEBUG_TARGET_NAME)
 
 DIRS = $(OBJS_DIR) $(SRCS_DIR) $(TARGET_DIR) $(INCLUDE_DIR)
 
@@ -89,8 +89,9 @@ remake: re
 
 run: ${TARGET}
 	./$(TARGET)
+rerun: re run
 test:
 	@echo '	SRCS: $(SRCS)'
 	@echo '	OBJS: $(OBJS)'
 	@echo '	INCLUDES: $(INCLUDES)'
-.PHONY: all clean fclean re remake debug de drun
+.PHONY: all clean fclean re remake debug de drun rerun
