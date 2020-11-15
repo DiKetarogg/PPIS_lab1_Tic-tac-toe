@@ -85,8 +85,8 @@ class TicTacToe {
 		m_x(x), m_halfX(x / 2),
 		m_y(y), m_halfY(y / 2),
 		m_grid(x,y),
-		m_center(&m_grid[x/2][y/2], x),
-		m_cur(x/2,y/2) {set(current);}
+		m_center(&m_grid[(x - 1) / 2][(y - 1) / 2], x),
+		m_cur(0,0) {clear();set(current);}
 
 	TicTacToe()
 		:m_emptyChar(32),
@@ -239,15 +239,66 @@ class TicTacToe {
 		}
 		return ch;
 	}
-	void printNear(size_t x, size_t y, void (*print)(char), char lineBreak = '\n') {
+	void printNearCurrent(size_t x, size_t y, void (*print)(char), char lineBreak = '\n') {
 		if (x == 0 || y == 0)
 			return;
-		ssize_t itX = m_cur.x - x / 2;
-		ssize_t itY = m_cur.y - y / 2;
-		for (size_t i = 0; i < x; ++i, ++itX) {
-			for (size_t j = 0; j < y; ++j, ++itY)
+		ssize_t startX = m_cur.x - (x - 1) / 2;
+		ssize_t itX = startX;
+		ssize_t itY = m_cur.y + (y - 1) / 2;
+		for (size_t i = 0; i < y; ++i, --itY) {
+			for (size_t j = 1; j < x; ++j, ++itX)
 				print(m_center[wrapX(itX)][wrapY(itY)]);
 			print(lineBreak);
+			itX = startX;
+		}
+	}
+	void printNearCurrentSep(size_t x, size_t y, void (*print)(char), char separator = 32, char lineBreak = '\n') {
+		if (x == 0 || y == 0)
+			return;
+		ssize_t startX = m_cur.x - (x - 1) / 2;
+		ssize_t itX = startX;
+		ssize_t itY = m_cur.y + (y - 1) / 2;
+		for (size_t i = 0; i < y; ++i, --itY) {
+			print(m_center[wrapX(itX)][wrapY(itY)]);
+			++itX;
+			for (size_t j = 1; j < x; ++j, ++itX) {
+				print(separator);
+				print(m_center[wrapX(itX)][wrapY(itY)]);
+			}
+			print(lineBreak);
+			itX = startX;
+		}
+	}
+	void printNear(size_t x, size_t y, ssize_t itX, ssize_t itY,
+			void (*print)(char), char lineBreak = '\n') {
+		if (x == 0 || y == 0)
+			return;
+		ssize_t startX = itX - (x - 1) / 2;
+		itX = startX;
+		itY += (y - 1) / 2;
+		for (size_t i = 0; i < y; ++i, --itY) {
+			for (size_t j = 1; j < x; ++j, ++itX)
+				print(m_center[wrapX(itX)][wrapY(itY)]);
+			print(lineBreak);
+			itX = startX;
+		}
+	}
+	void printNearSep(size_t x, size_t y, ssize_t itX, ssize_t itY,
+			void (*print)(char), char separator = 32, char lineBreak = '\n') {
+		if (x == 0 || y == 0)
+			return;
+		ssize_t startX = itX - (x - 1) / 2;
+		itX = startX;
+		itY += (y - 1) / 2;
+		for (size_t i = 0; i < y; ++i, --itY) {
+			print(m_center[wrapX(itX)][wrapY(itY)]);
+			++itX;
+			for (size_t j = 1; j < x; ++j, ++itX) {
+				print(separator);
+				print(m_center[wrapX(itX)][wrapY(itY)]);
+			}
+			print(lineBreak);
+			itX = startX;
 		}
 	}
 	void moveCurrent(ssize_t x, ssize_t y) {
@@ -266,12 +317,16 @@ class TicTacToe {
 		return m_cur;
 	}
 	ssize_t wrapX(ssize_t x) {
+		if (x < 0)
+			x += m_x;
 		x %= m_x;
 		if (x > m_halfX)
 			x -= m_x;
 		return x;
 	}
 	ssize_t wrapY(ssize_t y) {
+		if (y < 0)
+			y += m_y;
 		y %= m_y;
 		if (y > m_halfY)
 			y -= m_y;
@@ -297,13 +352,13 @@ class TicTacToe {
 		char ch = m_center[m_cur.x][m_cur.y];
 		switch (ch) {
 			case 'X':
-			set('y');
+			set('x');
 			break;
 			case 'Y': 
 			set('y');
 			break;
 			default:
-			if (ch == m_currentChar)
+			if (ch == m_emptyChar)
 				set(m_currentChar);
 		}
 	}
