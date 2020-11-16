@@ -18,7 +18,7 @@
 
 # Fortran module files
 *.mod
-*.smod
+*.smo
 
 # Compiled Static libraries
 *.lai
@@ -30,7 +30,8 @@
 *.exe
 *.out
 *.app
-bin/*
+tic-tac-toe
+deb_tic-tac-toe
 
 # Vim temp files
 *.swp
